@@ -20,11 +20,47 @@ namespace Crm.Api.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAll()
+        public async Task<IActionResult> GetAll(
+            
+            [FromQuery] string? name,
+            [FromQuery] string? email,
+            [FromQuery] string? region,
+            [FromQuery] DateTime? startDate,
+            [FromQuery] DateTime? endDate)
         {
-            var customers = await _db.Customers.ToListAsync();
+            var query = _db.Customers.AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(name))
+            {
+                query = query.Where(c =>
+                    EF.Functions.ILike(c.FirstName, $"%{name}%") ||
+                    EF.Functions.ILike(c.LastName, $"%{name}%"));
+            }
+
+            if (!string.IsNullOrWhiteSpace(email))
+            {
+                query = query.Where(c => EF.Functions.ILike(c.Email, $"%{email}%"));
+            }
+
+            if (!string.IsNullOrWhiteSpace(region))
+            {
+                query = query.Where(c => c.Region.ToLower() == region.ToLower());
+            }
+
+            if (startDate.HasValue)
+            {
+                query = query.Where(c => c.RegistrationDate >= startDate.Value);
+            }
+
+            if (endDate.HasValue)
+            {
+                query = query.Where(c => c.RegistrationDate <= endDate.Value);
+            }
+
+            var customers = await query.ToListAsync();
             return Ok(customers);
         }
+
 
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] CustomerDto dto)
