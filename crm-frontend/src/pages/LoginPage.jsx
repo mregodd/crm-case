@@ -5,7 +5,7 @@ const LoginPage = () => {
   const navigate = useNavigate();
 
   const handleLoginSuccess = () => {
-    navigate('/customers');
+    navigate('/customer');
   };
 
   return (
