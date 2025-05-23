@@ -1,3 +1,4 @@
+using Crm.Api.Configurations;
 using Crm.Api.Services;
 using Crm.Api.Settings;
 using Crm.Infrastructure.Data;
@@ -45,6 +46,8 @@ builder.Services.AddAuthentication(options =>
 builder.Services.AddAuthorization();
 builder.Services.AddSingleton<UserService>();
 builder.Services.AddSingleton<JwtService>();
+builder.Services.AddCorsPolicy();
+
 
 builder.Services.AddControllers();
 
@@ -62,6 +65,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseCors(CorsConfiguration.FrontendPolicyName);
 
 app.MapControllers();
 
