@@ -13,10 +13,12 @@ namespace Crm.Api.Controllers
     public class CustomerController : ControllerBase
     {
         private readonly CrmDbContext _db;
+        private readonly ILogger<CustomerController> _logger;
 
-        public CustomerController(CrmDbContext db)
+        public CustomerController(CrmDbContext db, ILogger<CustomerController> logger)
         {
             _db = db;
+            _logger = logger;
         }
 
         [HttpGet]
@@ -56,8 +58,10 @@ namespace Crm.Api.Controllers
             {
                 query = query.Where(c => c.RegistrationDate <= endDate.Value);
             }
-
+            
             var customers = await query.ToListAsync();
+            _logger.LogInformation("Customer list requested with filters - Name: {name}, Region: {region}, StartDate: {startDate}, EndDate: {endDate}",
+                name, region, startDate, endDate);
             return Ok(customers);
         }
 
@@ -77,7 +81,7 @@ namespace Crm.Api.Controllers
 
             _db.Customers.Add(customer);
             await _db.SaveChangesAsync();
-
+            _logger.LogInformation("New customer created: {Email}", customer.Email);
             return CreatedAtAction(nameof(GetAll), new { id = customer.Id }, customer);
         }
 
@@ -105,6 +109,7 @@ namespace Crm.Api.Controllers
 
             _db.Customers.Remove(customer);
             await _db.SaveChangesAsync();
+            _logger.LogWarning("Customer deleted: {Id}", id);
             return NoContent();
         }
     }
