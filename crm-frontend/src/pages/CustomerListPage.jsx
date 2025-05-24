@@ -1,29 +1,58 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
 const CustomerListPage = () => {
   const [customers, setCustomers] = useState([]);
   const [error, setError] = useState('');
+  const [filters, setFilters] = useState({
+    name: '',
+    email: '',
+    region: '',
+    startDate: '',
+    endDate: ''
+  });
   const navigate = useNavigate();
 
-  useEffect(() => {
-    fetchCustomers();
-  }, []);
+  
 
-  const fetchCustomers = async () => {
+  const fetchCustomers = useCallback(async () => {
     const token = localStorage.getItem('token');
+
+    const params = {};
+    if (filters.name) params.name = filters.name;
+    if (filters.email) params.email = filters.email;
+    if (filters.region) params.region = filters.region;
+    if (filters.startDate) params.startDate = filters.startDate;
+    if (filters.endDate) params.endDate = filters.endDate;
 
     try {
       const response = await axios.get('http://localhost:5098/api/customer', {
         headers: {
           Authorization: `Bearer ${token}`
-        }
+        },
+        params
       });
       setCustomers(response.data);
     } catch (err) {
-      setError('Veri alınırken hata oluştu. Yetkisiz olabilir ya da API çalışmıyor.', err);
+      setError('Veri alınırken hata oluştu.', err);
     }
+  }, [filters]);
+
+  useEffect(() => {
+    fetchCustomers();
+  }, [fetchCustomers]);
+
+  const handleFilterChange = (e) => {
+    setFilters({
+      ...filters,
+      [e.target.name]: e.target.value
+    });
+  };
+
+  const handleFilterSubmit = (e) => {
+    e.preventDefault();
+    fetchCustomers();
   };
 
   const handleDelete = async (id) => {
@@ -33,7 +62,7 @@ const CustomerListPage = () => {
         await axios.delete(`http://localhost:5098/api/customer/${id}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
-        setCustomers(customers.filter(c => c.id !== id)); // listeden kaldır
+        setCustomers(customers.filter(c => c.id !== id));
       } catch (err) {
         setError('Silme sırasında hata oluştu.', err);
       }
@@ -41,12 +70,53 @@ const CustomerListPage = () => {
   };
 
   return (
-    <div style={{ maxWidth: 600, margin: 'auto' }}>
+    <div style={{ maxWidth: 700, margin: 'auto' }}>
       <h2>Müşteri Listesi</h2>
 
       <button onClick={() => navigate('/customer/create')} style={{ marginBottom: '1rem' }}>
         Yeni Müşteri Ekle
       </button>
+
+      <form onSubmit={handleFilterSubmit} style={{ marginBottom: '1rem' }}>
+        <input
+          type="text"
+          name="name"
+          placeholder="Ad veya Soyad"
+          value={filters.name}
+          onChange={handleFilterChange}
+          style={{ marginRight: '0.5rem' }}
+        />
+        <input
+          type="email"
+          name="email"
+          placeholder="Email"
+          value={filters.email}
+          onChange={handleFilterChange}
+          style={{ marginRight: '0.5rem' }}
+        />
+        <input
+          type="text"
+          name="region"
+          placeholder="Bölge"
+          value={filters.region}
+          onChange={handleFilterChange}
+          style={{ marginRight: '0.5rem' }}
+        />
+        <input
+          type="date"
+          name="startDate"
+          value={filters.startDate}
+          onChange={handleFilterChange}
+          style={{ marginRight: '0.5rem' }}
+        />
+        <input
+          type="date"
+          name="endDate"
+          value={filters.endDate}
+          onChange={handleFilterChange}
+          style={{ marginRight: '0.5rem' }}
+        />
+      </form>
 
       {error && <p style={{ color: 'red' }}>{error}</p>}
 
