@@ -21,6 +21,18 @@ namespace Crm.Api.Controllers
             _logger = logger;
         }
 
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetCustomerById(Guid id)
+        {
+            var customer = await _db.Customers.FindAsync(id);
+            if (customer == null)
+            {
+                return NotFound();
+            }
+            return Ok(customer);
+        }
+
+
         [HttpGet]
         public async Task<IActionResult> GetAll(
             
