@@ -8,24 +8,37 @@ const CustomerListPage = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchCustomers = async () => {
-      const token = localStorage.getItem('token');
-
-      try {
-        const response = await axios.get('http://localhost:5098/api/customer', {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        });
-
-        setCustomers(response.data);
-      } catch (err) {
-        setError('Veri alınırken hata oluştu. Yetkisiz olabilir ya da API çalışmıyor.', err);
-      }
-    };
-
     fetchCustomers();
   }, []);
+
+  const fetchCustomers = async () => {
+    const token = localStorage.getItem('token');
+
+    try {
+      const response = await axios.get('http://localhost:5098/api/customer', {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      setCustomers(response.data);
+    } catch (err) {
+      setError('Veri alınırken hata oluştu. Yetkisiz olabilir ya da API çalışmıyor.', err);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    const token = localStorage.getItem('token');
+    if (window.confirm('Bu müşteriyi silmek istediğinize emin misiniz?')) {
+      try {
+        await axios.delete(`http://localhost:5098/api/customer/${id}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setCustomers(customers.filter(c => c.id !== id)); // listeden kaldır
+      } catch (err) {
+        setError('Silme sırasında hata oluştu.', err);
+      }
+    }
+  };
 
   return (
     <div style={{ maxWidth: 600, margin: 'auto' }}>
@@ -44,6 +57,12 @@ const CustomerListPage = () => {
           {customers.map((customer) => (
             <li key={customer.id}>
               <strong>{customer.firstName} {customer.lastName}</strong> – {customer.email} – {customer.region}
+              <button onClick={() => navigate(`/customer/edit/${customer.id}`)} style={{ marginLeft: '0.5rem' }}>
+                Düzenle
+              </button>
+              <button onClick={() => handleDelete(customer.id)} style={{ marginLeft: '0.5rem' }}>
+                Sil
+              </button>
             </li>
           ))}
         </ul>

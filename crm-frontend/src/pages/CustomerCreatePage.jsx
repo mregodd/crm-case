@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
 
 const CustomerCreatePage = () => {
   const navigate = useNavigate();
+  const { id } = useParams();
   const [form, setForm] = useState({
     firstName: '',
     lastName: '',
@@ -13,6 +14,23 @@ const CustomerCreatePage = () => {
   });
 
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (id) {
+      const token = localStorage.getItem('token');
+      axios.get(`http://localhost:5098/api/customer/${id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      })
+        .then((res) => {
+          setForm(res.data);
+        })
+        .catch(() => {
+          setError('Müşteri bilgileri yüklenemedi.');
+        });
+    }
+  }, [id]);
 
   const handleChange = (e) => {
     setForm({
@@ -26,11 +44,19 @@ const CustomerCreatePage = () => {
     const token = localStorage.getItem('token');
 
     try {
-      await axios.post('http://localhost:5098/api/customer', form, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
+      if (id) {
+        await axios.put(`http://localhost:5098/api/customer/${id}`, form, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+      } else {
+        await axios.post('http://localhost:5098/api/customer', form, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+      }
 
       navigate('/customer');
     } catch (err) {
@@ -40,7 +66,7 @@ const CustomerCreatePage = () => {
 
   return (
     <form onSubmit={handleSubmit} style={{ maxWidth: 500, margin: 'auto' }}>
-      <h2>Yeni Müşteri Ekle</h2>
+      <h2>{id ? 'Müşteri Düzenle' : 'Yeni Müşteri Ekle'}</h2>
 
       <input type="text" name="firstName" placeholder="Ad" value={form.firstName} onChange={handleChange} required />
       <input type="text" name="lastName" placeholder="Soyad" value={form.lastName} onChange={handleChange} required />
@@ -49,7 +75,7 @@ const CustomerCreatePage = () => {
       <input type="date" name="registrationDate" value={form.registrationDate} onChange={handleChange} required />
 
       {error && <p style={{ color: 'red' }}>{error}</p>}
-      <button type="submit">Kaydet</button>
+      <button type="submit">{id ? 'Güncelle' : 'Kaydet'}</button>
     </form>
   );
 };
