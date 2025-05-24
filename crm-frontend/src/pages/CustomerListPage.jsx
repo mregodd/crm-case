@@ -134,8 +134,11 @@ const CustomerListPage = () => {
           onChange={handleFilterChange}
           InputLabelProps={{ shrink: true }}
         />
-        <Button variant="contained" onClick={() => navigate('/customer/create')}>
+        <Button variant="contained" color="inherit" onClick={() => navigate('/customer/create')}>
           Yeni Müşteri Ekle
+        </Button>
+        <Button variant="contained" color="success"  onClick={() => navigate('/dashboard')}>
+          Dashboard
         </Button>
       </Box>
 
