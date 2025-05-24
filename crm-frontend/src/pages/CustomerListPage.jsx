@@ -1,6 +1,8 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { DataGrid } from '@mui/x-data-grid';
+import { Button, TextField, Box } from '@mui/material';
 
 const CustomerListPage = () => {
   const [customers, setCustomers] = useState([]);
@@ -12,32 +14,26 @@ const CustomerListPage = () => {
     startDate: '',
     endDate: ''
   });
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(10);
   const navigate = useNavigate();
-
-  
 
   const fetchCustomers = useCallback(async () => {
     const token = localStorage.getItem('token');
-
-    const params = {};
-    if (filters.name) params.name = filters.name;
-    if (filters.email) params.email = filters.email;
-    if (filters.region) params.region = filters.region;
-    if (filters.startDate) params.startDate = filters.startDate;
-    if (filters.endDate) params.endDate = filters.endDate;
-
     try {
       const response = await axios.get('http://localhost:5098/api/customer', {
-        headers: {
-          Authorization: `Bearer ${token}`
+        headers: { Authorization: `Bearer ${token}` },
+        params: {
+          ...filters,
+          page: page + 1,
+          pageSize,
         },
-        params
       });
       setCustomers(response.data);
     } catch (err) {
       setError('Veri alınırken hata oluştu.', err);
     }
-  }, [filters]);
+  }, [filters, page, pageSize]);
 
   useEffect(() => {
     fetchCustomers();
@@ -46,13 +42,9 @@ const CustomerListPage = () => {
   const handleFilterChange = (e) => {
     setFilters({
       ...filters,
-      [e.target.name]: e.target.value
+      [e.target.name]: e.target.value,
     });
-  };
-
-  const handleFilterSubmit = (e) => {
-    e.preventDefault();
-    fetchCustomers();
+    setPage(0);
   };
 
   const handleDelete = async (id) => {
@@ -60,84 +52,109 @@ const CustomerListPage = () => {
     if (window.confirm('Bu müşteriyi silmek istediğinize emin misiniz?')) {
       try {
         await axios.delete(`http://localhost:5098/api/customer/${id}`, {
-          headers: { Authorization: `Bearer ${token}` }
+          headers: { Authorization: `Bearer ${token}` },
         });
-        setCustomers(customers.filter(c => c.id !== id));
+        fetchCustomers();
       } catch (err) {
         setError('Silme sırasında hata oluştu.', err);
       }
     }
   };
 
+  const columns = [
+    { field: 'firstName', headerName: 'Ad', width: 130 },
+    { field: 'lastName', headerName: 'Soyad', width: 130 },
+    { field: 'email', headerName: 'Email', width: 200 },
+    { field: 'region', headerName: 'Bölge', width: 130 },
+    { field: 'registrationDate', headerName: 'Kayıt Tarihi', width: 160 },
+    {
+      field: 'actions',
+      headerName: 'İşlemler',
+      width: 200,
+      renderCell: (params) => (
+        <>
+          <Button
+            variant="contained"
+            color="primary"
+            size="small"
+            onClick={() => navigate(`/customer/edit/${params.row.id}`)}
+            style={{ marginRight: 8 }}
+          >
+            Düzenle
+          </Button>
+          <Button
+            variant="contained"
+            color="secondary"
+            size="small"
+            onClick={() => handleDelete(params.row.id)}
+          >
+            Sil
+          </Button>
+        </>
+      ),
+    },
+  ];
+
   return (
-    <div style={{ maxWidth: 700, margin: 'auto' }}>
+    <Box sx={{ maxWidth: 1100, margin: 'auto', mt: 4 }}>
       <h2>Müşteri Listesi</h2>
 
-      <button onClick={() => navigate('/customer/create')} style={{ marginBottom: '1rem' }}>
-        Yeni Müşteri Ekle
-      </button>
-
-      <form onSubmit={handleFilterSubmit} style={{ marginBottom: '1rem' }}>
-        <input
-          type="text"
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mb: 2 }}>
+        <TextField
+          label="Ad/Soyad"
           name="name"
-          placeholder="Ad veya Soyad"
           value={filters.name}
           onChange={handleFilterChange}
-          style={{ marginRight: '0.5rem' }}
         />
-        <input
-          type="email"
+        <TextField
+          label="Email"
           name="email"
-          placeholder="Email"
           value={filters.email}
           onChange={handleFilterChange}
-          style={{ marginRight: '0.5rem' }}
         />
-        <input
-          type="text"
+        <TextField
+          label="Bölge"
           name="region"
-          placeholder="Bölge"
           value={filters.region}
           onChange={handleFilterChange}
-          style={{ marginRight: '0.5rem' }}
         />
-        <input
-          type="date"
+        <TextField
+          label="Başlangıç Tarihi"
           name="startDate"
+          type="date"
           value={filters.startDate}
           onChange={handleFilterChange}
-          style={{ marginRight: '0.5rem' }}
+          InputLabelProps={{ shrink: true }}
         />
-        <input
-          type="date"
+        <TextField
+          label="Bitiş Tarihi"
           name="endDate"
+          type="date"
           value={filters.endDate}
           onChange={handleFilterChange}
-          style={{ marginRight: '0.5rem' }}
+          InputLabelProps={{ shrink: true }}
         />
-      </form>
+        <Button variant="contained" onClick={() => navigate('/customer/create')}>
+          Yeni Müşteri Ekle
+        </Button>
+      </Box>
 
       {error && <p style={{ color: 'red' }}>{error}</p>}
 
-      {customers.length === 0 ? (
-        <p>Kayıtlı müşteri bulunamadı.</p>
-      ) : (
-        <ul>
-          {customers.map((customer) => (
-            <li key={customer.id}>
-              <strong>{customer.firstName} {customer.lastName}</strong> – {customer.email} – {customer.region}
-              <button onClick={() => navigate(`/customer/edit/${customer.id}`)} style={{ marginLeft: '0.5rem' }}>
-                Düzenle
-              </button>
-              <button onClick={() => handleDelete(customer.id)} style={{ marginLeft: '0.5rem' }}>
-                Sil
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
+      <div style={{ height: 500, width: '100%' }}>
+        <DataGrid
+          rows={customers}
+          columns={columns}
+          pageSize={pageSize}
+          onPageSizeChange={(newPageSize) => setPageSize(newPageSize)}
+          rowsPerPageOptions={[5, 10, 20]}
+          pagination
+          page={page}
+          onPageChange={(newPage) => setPage(newPage)}
+          getRowId={(row) => row.id}
+        />
+      </div>
+    </Box>
   );
 };
 
